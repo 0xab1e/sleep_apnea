@@ -88,7 +88,9 @@ You can tune the detection sensitivity in `sleep.py`:
 
 ## Screenshots 📸
 
-*(Add screenshots here)*
+![Sleep Apnea Viewer Interface](assets/screenshot.png)
+
+*The interactive viewer showing detected peaks, apnea events, and the dynamic audio waveform.*
 
 ## License 📄
 
