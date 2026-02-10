@@ -25,8 +25,8 @@ Ensure you have Python 3.8+ installed.
 
 1.  **Clone the repository**:
     ```bash
-    git clone https://github.com/yourusername/sleep-apnea-detector.git
-    cd sleep-apnea-detector
+    git clone https://github.com/0xab1e/sleep_apnea.git
+    cd sleep_apnea
     ```
 
 2.  **Install dependencies**:
