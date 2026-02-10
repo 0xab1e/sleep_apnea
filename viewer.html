@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sleep Apnea Viewer</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --bg0: #0d1117;
+      --bg1: #161b22;
+      --bg2: #1c2129;
+      --bg3: #1f2937;
+      --bd: #30363d;
+      --t1: #e6edf3;
+      --t2: #8b949e;
+      --t3: #484f58;
+      --blue: #58a6ff;
+      --green: #3fb950;
+      --red: #f85149;
+      --yellow: #d29922;
+      --purple: #bc8cff
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box
+    }
+
+    body {
+      background: var(--bg0);
+      color: var(--t1);
+      font-family: 'Inter', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      display: flex;
+      flex-direction: column
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 16px;
+      background: var(--bg1);
+      border-bottom: 1px solid var(--bd);
+      flex-shrink: 0
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 10px
+    }
+
+    .header-left h1 {
+      font-size: 15px;
+      font-weight: 600
+    }
+
+    .header-left .sub {
+      font-size: 11px;
+      color: var(--t2)
+    }
+
+    .hstats {
+      display: flex;
+      gap: 18px
+    }
+
+    .si {
+      text-align: center
+    }
+
+    .si .sl {
+      font-size: 9px;
+      color: var(--t3);
+      text-transform: uppercase;
+      letter-spacing: .7px
+    }
+
+    .si .sv {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 500
+    }
+
+    .sv.danger {
+      color: var(--red)
+    }
+
+    .sv.warn {
+      color: var(--yellow)
+    }
+
+    .sv.ok {
+      color: var(--green)
+    }
+
+    .sv.info {
+      color: var(--blue)
+    }
+
+    .minimap {
+      position: relative;
+      height: 44px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--bd);
+      cursor: pointer;
+      flex-shrink: 0
+    }
+
+    .minimap canvas {
+      display: block;
+      width: 100%;
+      height: 100%
+    }
+
+    .mvp {
+      position: absolute;
+      top: 0;
+      height: 100%;
+      background: rgba(88, 166, 255, .12);
+      border-left: 2px solid rgba(88, 166, 255, .5);
+      border-right: 2px solid rgba(88, 166, 255, .5);
+      pointer-events: none
+    }
+
+    .controls {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 6px 16px;
+      background: var(--bg1);
+      border-bottom: 1px solid var(--bd);
+      flex-shrink: 0
+    }
+
+    .btn {
+      background: var(--bg2);
+      border: 1px solid var(--bd);
+      color: var(--t1);
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: background .15s
+    }
+
+    .btn:hover {
+      background: var(--bg3)
+    }
+
+    .btn.active {
+      background: rgba(88, 166, 255, .15);
+      border-color: var(--blue);
+      color: var(--blue)
+    }
+
+    .btn.play-btn {
+      font-size: 13px;
+      padding: 4px 14px
+    }
+
+    .time-display {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--t2);
+      min-width: 180px
+    }
+
+    .speed-btns {
+      display: flex;
+      gap: 2px
+    }
+
+    .speed-btns .btn {
+      padding: 3px 8px;
+      font-size: 10px
+    }
+
+    .speed-btns .btn.active {
+      background: rgba(63, 185, 80, .15);
+      border-color: var(--green);
+      color: var(--green)
+    }
+
+    .edit-hint {
+      font-size: 10px;
+      color: var(--yellow);
+      margin-left: 8px;
+      display: none
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      position: relative
+    }
+
+    .ruler {
+      height: 24px;
+      background: var(--bg1);
+      border-bottom: 1px solid var(--bd);
+      flex-shrink: 0
+    }
+
+    .ruler canvas {
+      display: block;
+      width: 100%;
+      height: 100%
+    }
+
+    .tracks {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden
+    }
+
+    .track {
+      flex: 1;
+      position: relative;
+      border-bottom: 1px solid var(--bd);
+      overflow: hidden
+    }
+
+    .track canvas {
+      display: block;
+      width: 100%;
+      height: 100%
+    }
+
+    .track-label {
+      position: absolute;
+      top: 4px;
+      left: 8px;
+      font-size: 10px;
+      color: var(--t2);
+      background: rgba(13, 17, 23, .8);
+      padding: 1px 6px;
+      border-radius: 3px;
+      pointer-events: none;
+      z-index: 5
+    }
+
+    .crosshair {
+      position: absolute;
+      top: 0;
+      width: 1px;
+      height: 100%;
+      background: rgba(139, 148, 158, .3);
+      pointer-events: none;
+      z-index: 8;
+      display: none
+    }
+
+    .ch-time {
+      position: absolute;
+      top: -22px;
+      transform: translateX(-50%);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px;
+      color: var(--t1);
+      background: var(--bg1);
+      border: 1px solid var(--bd);
+      padding: 1px 5px;
+      border-radius: 3px;
+      white-space: nowrap;
+      pointer-events: none
+    }
+
+    .playhead {
+      position: absolute;
+      top: 0;
+      width: 2px;
+      height: 100%;
+      background: var(--red);
+      pointer-events: none;
+      z-index: 9;
+      display: none
+    }
+
+    .ph-tri {
+      position: absolute;
+      top: -1px;
+      left: -5px;
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 7px solid var(--red)
+    }
+
+    .evlist {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      width: 200px;
+      background: rgba(22, 27, 34, .92);
+      border: 1px solid var(--bd);
+      border-radius: 6px;
+      z-index: 20;
+      backdrop-filter: blur(8px);
+      max-height: 45%;
+      overflow-y: auto;
+      font-size: 11px
+    }
+
+    .evlist-h {
+      padding: 8px 10px 4px;
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--t2);
+      text-transform: uppercase;
+      letter-spacing: .5px;
+      border-bottom: 1px solid var(--bd);
+      position: sticky;
+      top: 0;
+      background: rgba(22, 27, 34, .95)
+    }
+
+    .ev-item {
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(48, 54, 61, .4);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background .1s
+    }
+
+    .ev-item:hover {
+      background: var(--bg3)
+    }
+
+    .ev-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      flex-shrink: 0
+    }
+
+    .ev-time {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 10px
+    }
+
+    .ev-dur {
+      font-size: 9px;
+      color: var(--red)
+    }
+
+    .no-ev {
+      padding: 12px;
+      text-align: center;
+      color: var(--t3);
+      font-size: 11px
+    }
+
+    .bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 14px;
+      background: var(--bg1);
+      border-top: 1px solid var(--bd);
+      font-size: 10px;
+      color: var(--t2);
+      flex-shrink: 0
+    }
+
+    .bottom kbd {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      background: var(--bg2);
+      border: 1px solid var(--bd);
+      border-radius: 2px;
+      padding: 0 4px;
+      margin-right: 2px
+    }
+
+    .shortcuts {
+      display: flex;
+      gap: 10px
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 50px;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: rgba(22, 27, 34, .95);
+      border: 1px solid var(--bd);
+      color: var(--t1);
+      padding: 6px 14px;
+      border-radius: 5px;
+      font-size: 11px;
+      opacity: 0;
+      transition: opacity .2s, transform .2s;
+      z-index: 100;
+      pointer-events: none
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0)
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: transparent
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--bd);
+      border-radius: 3px
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <div class="header-left"><span style="font-size:20px">🫁</span>
+      <div>
+        <h1>Sleep Apnea Viewer</h1><span class="sub" id="dur"></span>
+      </div>
+    </div>
+    <div class="hstats" id="hstats"></div>
+  </div>
+  <div class="minimap" id="mm"><canvas id="mmC"></canvas>
+    <div class="mvp" id="mvp"></div>
+  </div>
+  <div class="controls">
+    <button class="btn play-btn" id="playBtn" onclick="togglePlay()">▶</button>
+    <span class="time-display" id="timeDisp">0:00.0 / 0:00.0</span>
+    <div class="speed-btns"><button class="btn" onclick="setSpeed(0.5)">0.5x</button><button class="btn active" id="sp1"
+        onclick="setSpeed(1)">1x</button><button class="btn" onclick="setSpeed(2)">2x</button></div>
+    <button class="btn" id="editBtn" onclick="toggleEdit()">✏️ Edit</button>
+    <span class="edit-hint" id="editHint">Click envelope to add • Click peak to remove</span>
+  </div>
+  <div class="main" id="main">
+    <div class="ruler"><canvas id="rC"></canvas></div>
+    <div class="tracks" id="tracks">
+      <div class="track" id="aTrack"><span class="track-label">Raw Audio</span><canvas id="aC"></canvas></div>
+      <div class="track" id="eTrack"><span class="track-label">Breathing Envelope</span><canvas id="eC"></canvas></div>
+      <div class="crosshair" id="ch">
+        <div class="ch-time" id="chT"></div>
+      </div>
+      <div class="playhead" id="ph">
+        <div class="ph-tri"></div>
+      </div>
+    </div>
+    <div class="evlist" id="evlist"></div>
+  </div>
+  <div class="bottom">
+    <div class="shortcuts">
+      <span><kbd>Space</kbd>Play</span><span><kbd>Scroll</kbd>Zoom</span><span><kbd>Drag</kbd>Pan</span><span><kbd>E</kbd>Edit</span><span><kbd>F</kbd>Fit</span>
+    </div>
+    <span id="zinfo">1.0x</span>
+  </div>
+  <div class="toast" id="toast"></div>
+  <audio id="audio" preload="auto"></audio>
+
+  <script>
+    const DATA =/*DATA_PLACEHOLDER*/null;
+    if (!DATA) { document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;color:#8b949e;font-size:16px">No data. Run sleep.py first.</div>'; throw ''; }
+
+    const MIN_APNEA = DATA.min_apnea_duration || 10;
+    const audio = document.getElementById('audio');
+    audio.src = 'data:audio/wav;base64,' + DATA.audio_b64;
+
+    const S = { vs: 0, ve: DATA.duration, drag: false, dx: 0, dvs: 0, dve: 0, edit: false, hoverPeak: -1, toastT: null };
+    const mmC = document.getElementById('mmC'), rC = document.getElementById('rC'), aC = document.getElementById('aC'), eC = document.getElementById('eC');
+    const mmCtx = mmC.getContext('2d'), rCtx = rC.getContext('2d'), aCtx = aC.getContext('2d'), eCtx = eC.getContext('2d');
+    const tracks = document.getElementById('tracks'), ch = document.getElementById('ch'), chT = document.getElementById('chT'), ph = document.getElementById('ph');
+
+    function init() {
+      buildStats(); buildEvList(); resize(); render();
+      audio.addEventListener('timeupdate', () => { updateTimeDisp(); renderPlayhead() });
+      audio.addEventListener('ended', () => { document.getElementById('playBtn').textContent = '▶' });
+      window.addEventListener('resize', () => { resize(); render() });
+      setupInput();
+    }
+
+    function buildStats() {
+      const s = DATA.stats, d = DATA.duration;
+      const h = Math.floor(d / 3600), m = Math.floor((d % 3600) / 60), sec = Math.floor(d % 60);
+      let ds = h > 0 ? h + 'h ' : ''; ds += (m > 0 || h > 0) ? m + 'm ' : ''; ds += sec + 's';
+      document.getElementById('dur').textContent = 'Duration: ' + ds;
+      document.getElementById('hstats').innerHTML =
+        `<div class="si"><div class="sl">BPM</div><div class="sv info">${s.bpm}</div></div>` +
+        `<div class="si"><div class="sl">AHI</div><div class="sv ${s.ahi > 15 ? 'danger' : s.ahi > 5 ? 'warn' : 'ok'}">${s.ahi}</div></div>` +
+        `<div class="si"><div class="sl">Avg Gap</div><div class="sv info">${s.avg_gap}s</div></div>` +
+        `<div class="si"><div class="sl">Min</div><div class="sv ok">${s.min_gap}s</div></div>` +
+        `<div class="si"><div class="sl">Max</div><div class="sv ${s.max_gap > 10 ? 'danger' : 'warn'}">${s.max_gap}s</div></div>` +
+        `<div class="si"><div class="sl">Events</div><div class="sv ${DATA.events.length ? 'danger' : 'ok'}">${DATA.events.length}</div></div>`;
+    }
+
+    function buildEvList() {
+      const el = document.getElementById('evlist');
+      let h = '<div class="evlist-h">Apnea Events</div>';
+      if (!DATA.events.length) { h += '<div class="no-ev">No events detected</div>'; }
+      else DATA.events.forEach((e, i) => { h += `<div class="ev-item" onclick="zoomEvt(${i})"><div class="ev-dot"></div><div><div class="ev-time">${fmtT(e.start)} → ${fmtT(e.end)}</div><div class="ev-dur">${e.duration.toFixed(1)}s</div></div></div>`; });
+      el.innerHTML = h;
+    }
+
+    function resize() { const dpr = window.devicePixelRatio || 1;[mmC, rC, aC, eC].forEach(c => { const r = c.parentElement.getBoundingClientRect(); c.width = r.width * dpr; c.height = r.height * dpr; c.style.width = r.width + 'px'; c.style.height = r.height + 'px'; c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0) }); }
+
+    function render() {
+      renderMM(); renderMMVP(); renderRuler(); renderAudio(); renderEnv(); renderPlayhead();
+      document.getElementById('zinfo').textContent = (1 / ((S.ve - S.vs) / DATA.duration)).toFixed(1) + 'x | ' + fmtT(S.ve - S.vs) + ' visible';
+    }
+    function sched() { requestAnimationFrame(render); }
+
+    // ---- MINIMAP ----
+    function renderMM() {
+      const w = gw(mmC), h = gh(mmC), ctx = mmCtx; ctx.clearRect(0, 0, w, h);
+      DATA.events.forEach(e => { const x0 = (e.start / DATA.duration) * w, x1 = (e.end / DATA.duration) * w; ctx.fillStyle = 'rgba(248,81,73,.15)'; ctx.fillRect(x0, 0, x1 - x0, h) });
+      ctx.beginPath(); ctx.moveTo(0, h / 2);
+      for (let px = 0; px < w; px++) {
+        const t0 = (px / w) * DATA.duration, t1 = ((px + 1) / w) * DATA.duration;
+        const i0 = Math.max(0, Math.floor(t0 * DATA.display_sr)), i1 = Math.min(DATA.envelope.length - 1, Math.ceil(t1 * DATA.display_sr));
+        let mx = 0; for (let i = i0; i <= i1; i++)mx = Math.max(mx, DATA.envelope[i]); ctx.lineTo(px, h / 2 - mx * h / 2 * .85)
+      }
+      ctx.lineTo(w, h / 2); ctx.closePath(); ctx.fillStyle = 'rgba(63,185,80,.25)'; ctx.fill();
+    }
+
+    function renderMMVP() {
+      const c = document.getElementById('mm').getBoundingClientRect();
+      const l = (S.vs / DATA.duration) * c.width, w2 = ((S.ve - S.vs) / DATA.duration) * c.width;
+      const vp = document.getElementById('mvp'); vp.style.left = l + 'px'; vp.style.width = Math.max(4, w2) + 'px';
+    }
+
+    // ---- RULER ----
+    function renderRuler() {
+      const w = gw(rC), h = gh(rC), ctx = rCtx; ctx.clearRect(0, 0, w, h);
+      const vd = S.ve - S.vs, tis = [.1, .2, .5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1800, 3600];
+      let ti = tis[0]; for (const t of tis) { if ((t / vd) * w >= 60) { ti = t; break } }
+      const st = Math.floor(S.vs / ti) * ti; ctx.font = '9px "JetBrains Mono",monospace'; ctx.textAlign = 'center';
+      for (let t = st; t <= S.ve; t += ti) {
+        const x = t2x(t, w); if (x < -50 || x > w + 50) continue;
+        ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, h - 6); ctx.lineTo(x, h); ctx.stroke();
+        ctx.fillStyle = '#8b949e'; ctx.fillText(fmtT(t), x, h - 9)
+      }
+    }
+
+    // ---- AUDIO TRACK (dynamic scaling) ----
+    function renderAudio() {
+      const w = gw(aC), h = gh(aC), ctx = aCtx; ctx.clearRect(0, 0, w, h);
+      const sr = DATA.display_sr, half = h / 2; drawGrid(ctx, w, h); drawEvts(ctx, w, h);
+      // Compute visible range min/max for dynamic scaling
+      let globalMax = 0;
+      const pts = [];
+      for (let px = 0; px < w; px++) {
+        const t0 = x2t(px, w), t1 = x2t(px + 1, w);
+        const i0 = Math.max(0, Math.floor(t0 * sr)), i1 = Math.min(DATA.audio_max.length - 1, Math.ceil(t1 * sr));
+        let mn = Infinity, mx = -Infinity;
+        for (let i = i0; i <= i1; i++) { mx = Math.max(mx, DATA.audio_max[i]); mn = Math.min(mn, DATA.audio_min[i]) }
+        if (mx === -Infinity) { mx = 0; mn = 0 } pts.push({ mn, mx });
+        globalMax = Math.max(globalMax, Math.abs(mx), Math.abs(mn))
+      }
+      if (globalMax < 1e-6) globalMax = 1;
+      const scale = 0.9 / globalMax; // dynamic scale to fill track
+      ctx.beginPath();
+      for (let px = 0; px < w; px++) { const y = half - pts[px].mx * half * scale; if (px === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y) }
+      for (let px = w - 1; px >= 0; px--) { ctx.lineTo(px, half - pts[px].mn * half * scale) }
+      ctx.closePath();
+      const g = ctx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, 'rgba(88,166,255,.6)'); g.addColorStop(.5, 'rgba(88,166,255,.25)'); g.addColorStop(1, 'rgba(88,166,255,.6)');
+      ctx.fillStyle = g; ctx.fill();
+      ctx.strokeStyle = 'rgba(88,166,255,.12)'; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(0, half); ctx.lineTo(w, half); ctx.stroke();
+    }
+
+    // ---- ENVELOPE TRACK ----
+    function renderEnv() {
+      const w = gw(eC), h = gh(eC), ctx = eCtx; ctx.clearRect(0, 0, w, h);
+      const sr = DATA.display_sr; drawGrid(ctx, w, h); drawEvts(ctx, w, h);
+      const pts = []; for (let px = 0; px < w; px++) {
+        const t0 = x2t(px, w), t1 = x2t(px + 1, w);
+        const i0 = Math.max(0, Math.floor(t0 * sr)), i1 = Math.min(DATA.envelope.length - 1, Math.ceil(t1 * sr));
+        let mx = 0; for (let i = i0; i <= i1; i++)mx = Math.max(mx, DATA.envelope[i]); pts.push(mx)
+      }
+      ctx.beginPath(); ctx.moveTo(0, h); for (let px = 0; px < w; px++)ctx.lineTo(px, h - pts[px] * h * .9); ctx.lineTo(w, h); ctx.closePath();
+      const g = ctx.createLinearGradient(0, 0, 0, h); g.addColorStop(0, 'rgba(63,185,80,.35)'); g.addColorStop(1, 'rgba(63,185,80,.02)'); ctx.fillStyle = g; ctx.fill();
+      ctx.beginPath(); for (let px = 0; px < w; px++) { const y = h - pts[px] * h * .9; if (px === 0) ctx.moveTo(px, y); else ctx.lineTo(px, y) }
+      ctx.strokeStyle = '#3fb950'; ctx.lineWidth = 1.5; ctx.stroke();
+      // Peaks
+      const pr = Math.max(3, Math.min(6, w / (DATA.peaks.length + 1) * .3));
+      for (let i = 0; i < DATA.peaks.length; i++) {
+        const t = DATA.peaks[i]; if (t < S.vs || t > S.ve) continue;
+        const x = t2x(t, w), v = DATA.peak_values[i], y = h - v * h * .9;
+        const isHov = S.edit && S.hoverPeak === i;
+        ctx.beginPath(); ctx.arc(x, y, isHov ? pr + 3 : pr, 0, Math.PI * 2);
+        ctx.fillStyle = isHov ? 'rgba(248,81,73,.4)' : 'rgba(210,153,34,.15)'; ctx.fill();
+        ctx.beginPath(); ctx.arc(x, y, isHov ? pr + 1 : pr, 0, Math.PI * 2);
+        ctx.fillStyle = isHov ? '#f85149' : '#d29922'; ctx.fill();
+        ctx.strokeStyle = isHov ? 'rgba(248,81,73,.6)' : 'rgba(210,153,34,.5)'; ctx.lineWidth = 1; ctx.stroke()
+      }
+    }
+
+    function renderPlayhead() {
+      const w = gw(aC), r = tracks.getBoundingClientRect();
+      if (!audio.duration) { ph.style.display = 'none'; return }
+      const t = audio.currentTime; if (t < S.vs || t > S.ve) { ph.style.display = 'none'; return }
+      ph.style.display = 'block'; ph.style.left = t2x(t, r.width) + 'px';
+      updateTimeDisp();
+    }
+
+    function updateTimeDisp() { document.getElementById('timeDisp').textContent = fmtT(audio.currentTime || 0) + ' / ' + fmtT(DATA.duration); }
+
+    // ---- HELPERS ----
+    function drawGrid(ctx, w, h) {
+      const vd = S.ve - S.vs, tis = [.1, .2, .5, 1, 2, 5, 10, 15, 30, 60, 120, 300, 600, 1800, 3600];
+      let ti = tis[0]; for (const t of tis) { if ((t / vd) * w >= 60) { ti = t; break } }
+      const st = Math.floor(S.vs / ti) * ti; ctx.strokeStyle = 'rgba(48,54,61,.4)'; ctx.lineWidth = .5;
+      for (let t = st; t <= S.ve; t += ti) { const x = t2x(t, w); ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke() }
+    }
+
+    function drawEvts(ctx, w, h) {
+      DATA.events.forEach(e => {
+        const x0 = t2x(e.start, w), x1 = t2x(e.end, w); if (x1 < 0 || x0 > w) return;
+        ctx.fillStyle = 'rgba(248,81,73,.08)'; ctx.fillRect(x0, 0, x1 - x0, h);
+        ctx.strokeStyle = 'rgba(248,81,73,.35)'; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(x0, 0); ctx.lineTo(x0, h); ctx.moveTo(x1, 0); ctx.lineTo(x1, h); ctx.stroke(); ctx.setLineDash([]);
+        const cx = (x0 + x1) / 2; if (cx > 0 && cx < w && (x1 - x0) > 35) { ctx.font = '10px "JetBrains Mono",monospace'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(248,81,73,.7)'; ctx.fillText(e.duration.toFixed(1) + 's', cx, 14) }
+      })
+    }
+
+    function t2x(t, w) { return ((t - S.vs) / (S.ve - S.vs)) * w }
+    function x2t(x, w) { return S.vs + (x / w) * (S.ve - S.vs) }
+    function gw(c) { return c.width / (window.devicePixelRatio || 1) }
+    function gh(c) { return c.height / (window.devicePixelRatio || 1) }
+    function fmtT(s) { if (s < 0) s = 0; const m = Math.floor(s / 60), sec = s % 60; return m > 0 ? m + ':' + sec.toFixed(1).padStart(4, '0') : sec.toFixed(2) + 's' }
+    function clamp() { const d = S.ve - S.vs; if (S.vs < 0) { S.vs = 0; S.ve = d } if (S.ve > DATA.duration) { S.ve = DATA.duration; S.vs = Math.max(0, DATA.duration - d) } }
+    function toast(m) { const t = document.getElementById('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(S.toastT); S.toastT = setTimeout(() => t.classList.remove('show'), 2000) }
+
+    // ---- PLAYBACK ----
+    function togglePlay() { if (audio.paused) { audio.play(); document.getElementById('playBtn').textContent = '⏸'; animPlay() } else { audio.pause(); document.getElementById('playBtn').textContent = '▶' } }
+    function animPlay() {
+      if (audio.paused) return; renderPlayhead();
+      // Auto-scroll if playhead goes out of view
+      const t = audio.currentTime; if (t > S.ve) { const d = S.ve - S.vs; S.vs = t; S.ve = t + d; clamp(); render() }
+      requestAnimationFrame(animPlay)
+    }
+    function setSpeed(s) {
+      audio.playbackRate = s; document.querySelectorAll('.speed-btns .btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.speed-btns .btn').forEach(b => { if (b.textContent === s + 'x') b.classList.add('active') })
+    }
+
+    // ---- EDIT MODE ----
+    function toggleEdit() {
+      S.edit = !S.edit; const b = document.getElementById('editBtn');
+      b.classList.toggle('active', S.edit); b.textContent = S.edit ? '✏️ Editing' : '✏️ Edit';
+      document.getElementById('editHint').style.display = S.edit ? 'inline' : 'none';
+      document.getElementById('eTrack').style.cursor = S.edit ? 'crosshair' : '';
+      S.hoverPeak = -1; render()
+    }
+
+    function findPeak(mx, my, w, h) {
+      let best = -1, bd = Infinity; const thr = 12;
+      for (let i = 0; i < DATA.peaks.length; i++) {
+        const t = DATA.peaks[i]; if (t < S.vs || t > S.ve) continue;
+        const px = t2x(t, w), v = DATA.peak_values[i], py = h - v * h * .9;
+        const d = Math.sqrt((mx - px) ** 2 + (my - py) ** 2); if (d < thr && d < bd) { bd = d; best = i }
+      } return best
+    }
+
+    function addPeak(time) {
+      const idx = Math.round(time * DATA.display_sr);
+      const val = DATA.envelope[Math.min(idx, DATA.envelope.length - 1)];
+      DATA.peaks.push(parseFloat(time.toFixed(4))); DATA.peak_values.push(parseFloat(val.toFixed(4)));
+      recompute(); toast('✅ Breath point added')
+    }
+
+    function removePeak(i) {
+      DATA.peaks.splice(i, 1); DATA.peak_values.splice(i, 1);
+      recompute(); toast('🗑️ Breath point removed')
+    }
+
+    function recompute() {
+      // Sort peaks
+      const sorted = DATA.peaks.map((t, i) => ({ t, v: DATA.peak_values[i] })).sort((a, b) => a.t - b.t);
+      DATA.peaks = sorted.map(p => p.t); DATA.peak_values = sorted.map(p => p.v);
+      // Intervals
+      const iv = []; for (let i = 1; i < DATA.peaks.length; i++)iv.push(DATA.peaks[i] - DATA.peaks[i - 1]);
+      // Events
+      DATA.events = []; for (let i = 0; i < iv.length; i++) { if (iv[i] >= MIN_APNEA) DATA.events.push({ start: DATA.peaks[i], end: DATA.peaks[i + 1], duration: parseFloat(iv[i].toFixed(2)) }) }
+      // Stats
+      if (iv.length > 0) {
+        const sum = iv.reduce((a, b) => a + b, 0);
+        DATA.stats.bpm = parseFloat(((DATA.peaks.length / DATA.duration) * 60).toFixed(1));
+        DATA.stats.avg_gap = parseFloat((sum / iv.length).toFixed(2));
+        DATA.stats.min_gap = parseFloat(Math.min(...iv).toFixed(2));
+        DATA.stats.max_gap = parseFloat(Math.max(...iv).toFixed(2));
+        DATA.stats.ahi = parseFloat((DATA.events.length / (DATA.duration / 3600)).toFixed(1))
+      }
+      else { DATA.stats = { bpm: 0, avg_gap: 0, min_gap: 0, max_gap: 0, ahi: 0 } }
+      buildStats(); buildEvList(); render()
+    }
+
+    function zoomEvt(i) {
+      const e = DATA.events[i]; const pad = e.duration * .3;
+      S.vs = Math.max(0, e.start - pad); S.ve = Math.min(DATA.duration, e.end + pad); render();
+      audio.currentTime = e.start
+    }
+
+    // ---- INTERACTIONS ----
+    function setupInput() {
+      tracks.addEventListener('wheel', e => {
+        e.preventDefault(); const r = tracks.getBoundingClientRect();
+        const mx = (e.clientX - r.left) / r.width; const mt = S.vs + mx * (S.ve - S.vs);
+        const f = e.deltaY > 0 ? 1.15 : 1 / 1.15; const nd = Math.max(.5, Math.min(DATA.duration, (S.ve - S.vs) * f));
+        S.vs = mt - mx * nd; S.ve = mt + (1 - mx) * nd; clamp(); render()
+      }, { passive: false });
+
+      let clickX = 0, clickY = 0, clickMoved = false;
+      tracks.addEventListener('mousedown', e => {
+        if (e.button !== 0) return;
+        S.drag = true; S.dx = e.clientX; S.dvs = S.vs; S.dve = S.ve; clickX = e.clientX; clickY = e.clientY; clickMoved = false;
+        tracks.style.cursor = 'grabbing'
+      });
+
+      window.addEventListener('mousemove', e => {
+        if (S.drag) {
+          const r = tracks.getBoundingClientRect(); const dx = e.clientX - S.dx;
+          const td = -(dx / r.width) * (S.dve - S.dvs); S.vs = S.dvs + td; S.ve = S.dve + td; clamp(); render();
+          if (Math.abs(e.clientX - clickX) > 5 || Math.abs(e.clientY - clickY) > 5) clickMoved = true
+        }
+        // Crosshair + hover
+        const r = tracks.getBoundingClientRect();
+        if (e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom) {
+          const x = e.clientX - r.left; ch.style.display = 'block'; ch.style.left = x + 'px'; chT.textContent = fmtT(Math.max(0, x2t(x, r.width)));
+          // Peak hover in edit mode
+          if (S.edit) {
+            const eR = document.getElementById('eTrack').getBoundingClientRect();
+            if (e.clientY >= eR.top && e.clientY <= eR.bottom) {
+              const my = e.clientY - eR.top;
+              S.hoverPeak = findPeak(x, my, r.width, eR.height);
+              document.getElementById('eTrack').style.cursor = S.hoverPeak >= 0 ? 'pointer' : 'crosshair'; renderEnv()
+            }
+            else { if (S.hoverPeak >= 0) { S.hoverPeak = -1; renderEnv() } }
+          }
+        }
+        else { ch.style.display = 'none' }
+      });
+
+      window.addEventListener('mouseup', e => {
+        if (S.drag && !clickMoved) {// It was a click, not a drag
+          const r = tracks.getBoundingClientRect(); const x = e.clientX - r.left; const t = x2t(x, r.width);
+          const eR = document.getElementById('eTrack').getBoundingClientRect();
+          if (S.edit && e.clientY >= eR.top && e.clientY <= eR.bottom) {
+            // Edit mode click on envelope track
+            if (S.hoverPeak >= 0) { removePeak(S.hoverPeak); S.hoverPeak = -1 }
+            else { addPeak(Math.max(0, Math.min(DATA.duration, t))) }
+          }
+          else {// Seek audio
+            audio.currentTime = Math.max(0, Math.min(audio.duration || DATA.duration, t)); renderPlayhead()
+          }
+        }
+        S.drag = false; tracks.style.cursor = S.edit ? '' : '';
+      });
+
+      document.getElementById('mm').addEventListener('mousedown', e => {
+        const r = e.currentTarget.getBoundingClientRect();
+        const ratio = (e.clientX - r.left) / r.width; const ct = ratio * DATA.duration; const vd = S.ve - S.vs;
+        S.vs = ct - vd / 2; S.ve = ct + vd / 2; clamp(); render()
+      });
+
+      window.addEventListener('keydown', e => {
+        const vd = S.ve - S.vs, ps = vd * .2;
+        switch (e.key) {
+          case ' ': e.preventDefault(); togglePlay(); break;
+          case 'ArrowLeft': e.preventDefault(); S.vs -= ps; S.ve -= ps; clamp(); render(); break;
+          case 'ArrowRight': e.preventDefault(); S.vs += ps; S.ve += ps; clamp(); render(); break;
+          case '+': case '=': e.preventDefault(); zoomBy(.7); break; case '-': case '_': e.preventDefault(); zoomBy(1.4); break;
+          case 'f': case 'F': e.preventDefault(); S.vs = 0; S.ve = DATA.duration; render(); break;
+          case 'e': case 'E': e.preventDefault(); toggleEdit(); break;
+          case 'Home': e.preventDefault(); { const d = S.ve - S.vs; S.vs = 0; S.ve = d; render() } break;
+          case 'End': e.preventDefault(); { const d = S.ve - S.vs; S.ve = DATA.duration; S.vs = DATA.duration - d; render() } break
+        }
+      });
+    }
+
+    function zoomBy(f) {
+      const mid = (S.vs + S.ve) / 2; const nd = Math.max(.5, Math.min(DATA.duration, (S.ve - S.vs) * f));
+      S.vs = mid - nd / 2; S.ve = mid + nd / 2; clamp(); render()
+    }
+
+    init();
+  </script>
+</body>
+
+</html>
